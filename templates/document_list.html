@@ -1,0 +1,38 @@
+<html>
+<head>
+	<title>
+		Document list
+	</title>
+	
+</head>
+
+<body>
+<h1>
+	Hello
+</h1>
+
+<h3>
+	There are {{ count}} documents in collection
+</h3>
+
+<table>
+	{% for d in documents %}	
+		<tr>
+			<td>
+				<a href="/document_remove?d={{d._id}}">REMOVE</a>
+				<br>
+				{{d.title}}
+				<br>
+				{{d.source}}
+			</td>
+			<td>
+				{{d.content[:300]}}
+			</td>
+		</tr>
+	{% endfor %}
+</table>
+
+
+
+
+</body>
