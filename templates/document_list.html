@@ -15,18 +15,45 @@
 	There are {{ count}} documents in collection
 </h3>
 
+<div>
+	Add new document:
+	<br/>
+	<form action="/fetch" method="POST">
+		<input type="text" name="url">
+		<input type="submit" value="FETCH">
+	</form>
+</div>
+
 <table>
 	{% for d in documents %}	
 		<tr>
 			<td>
-				<a href="/document_remove?d={{d._id}}">REMOVE</a>
+				<!--<a href="/document_remove?d={{d._id}}">REMOVE</a>-->
+				<a href="/class1?d={{d._id}}">Classify</a>
 				<br>
 				{{d.title}}
 				<br>
 				{{d.source}}
 			</td>
+
 			<td>
 				{{d.content[:300]}}
+			</td>
+
+			<td>
+				{% for tag in d.tags %}
+					{{tag}}
+					<a href="/document_tag_remove?d={{d._id}}&tag={{tag|urlencode}}">X</a>
+					<br/>
+				{% endfor %}
+			</td>
+			
+			<td>
+				<form action="/document_tag_add" method="GET">
+					<input type="hidden" name="d" value="{{d._id}}">
+					<input type="text" name="tag">
+					<input type="submit" value="Add tag">
+				</form>
 			</td>
 		</tr>
 	{% endfor %}

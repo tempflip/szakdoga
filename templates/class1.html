@@ -1,0 +1,31 @@
+<html>
+<head>
+	<title>
+		Szakdoga app
+	</title>
+	
+</head>
+
+<body>
+<h1>CLASS1</h1>
+
+<div>
+	<b>{{d.title}}</b>
+	<p/>
+	{{d.content[:300]}}
+
+</div>
+<div>
+	{% for p in probs %}
+		{{p[0]}} 
+		: 
+		{{p[1]}} %
+		<a href="/document_tag_add?d={{d._id}}&tag={{p[0]|urlencode}}">+</a>
+		<br/>
+
+	{% endfor %}
+</div>
+
+
+
+</body>

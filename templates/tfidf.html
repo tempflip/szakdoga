@@ -1,0 +1,27 @@
+<html>
+<head>
+	<title>
+		Szakdoga app
+	</title>
+	
+</head>
+
+<body>
+<h1>TF-IDF</h1>
+
+<div>
+	{% for d in documents %}
+		{{d['d']['title']}}
+		<p/>
+		{% for w in d['tfidf'] %}
+			{{w[0]}} {{w[1]}}
+			<br/>
+		{% endfor %}
+		<p/>
+		
+	{% endfor %}
+</div>
+
+
+
+</body>
