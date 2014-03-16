@@ -9,9 +9,27 @@
 <body>
 <h1>TF-IDF</h1>
 
+<h1>General Frequencies</h1>
+
+<table>
+	{% for w in genFreq %}
+	<tr>
+		<td>
+			{{w[0]}}
+		</td>
+		<td>
+			{{w[1]}}
+		</td>
+	</tr>
+	{% endfor %}
+</table>
+<h1>Frequency per word</h1>
+
 <div>
 	{% for d in documents %}
-		{{d['d']['title']}}
+		<h2>
+			{{d['d']['title']}}
+		</h2>
 		<p/>
 		{% for w in d['tfidf'] %}
 			{{w[0]}} {{w[1]}}

@@ -159,6 +159,7 @@ def decisionTreeClassifier():
 
 @app.route("/tf_idf")
 def tfIdf():
+	TFIDF_MIN_SCORE = 100
 	import nltk
 	from nltk.tokenize import WordPunctTokenizer
 	tokenizer = WordPunctTokenizer()		
@@ -168,7 +169,7 @@ def tfIdf():
 	docs = collection.find()
 	tfidf = []
 	for d in docs:
-		for word in set(tokenizer.tokenize(d['content'])):
+		for word in tokenizer.tokenize(d['content'].lower()):
 			if word not in idfMap:
 				idfMap[word] = 1
 			else:
@@ -177,20 +178,26 @@ def tfIdf():
 	docs = collection.find()
 	for d in docs:
 		tfMap = {}
-		for word in set(tokenizer.tokenize(d['content'])):
+		for word in set(tokenizer.tokenize(d['content'].lower())):
 		 	if word not in tfMap:
 		 		tfMap[word] = 1
 		 	else:
 		 		tfMap[word] += 1
 		tfIdfValues = []
-		for word in set(tokenizer.tokenize(d['content'])):
-			tfIdfValues.append((word, tfMap[word] * 1000 / idfMap[word]))
+		for word in set(tokenizer.tokenize(d['content'].lower())):
+			if (tfMap[word] * 1000 / idfMap[word]) > TFIDF_MIN_SCORE:
+				tfIdfValues.append((word, tfMap[word] * 1000 / idfMap[word]))
 		tfIdfValues = sorted(tfIdfValues, key = lambda x : x[1], reverse = True)
 		tfidf.append({'d' : d,
 					  'tfidf' : tfIdfValues})
 
-	print tfidf
-	return render_template("tfidf.html", documents = tfidf)
+
+	# general word frequency
+	genFreq = [(w, idfMap[w]) for w in idfMap]
+	genFreq = sorted(genFreq, key = lambda x : x[1], reverse = True)
+
+	return render_template("tfidf.html", documents = tfidf
+										, genFreq = genFreq)
 
 if __name__ == "__main__":
     app.run(debug = True)
