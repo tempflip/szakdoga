@@ -1,21 +1,33 @@
 <html>
 <head>
 	<title>
-		Szakdoga app
+		Classify a document
 	</title>
 	
 </head>
 
 <body>
-<h1>CLASS1</h1>
+<h1>Classify a document</h1>
 
 <div>
-	<b>{{d.title}}</b>
-	<p/>
-	{{d.content[:300]}}
+	<h2>Document</h2>
+	<h3><b>{{d.title}}</b></h3>
+
+	{{d.content[:2000]}}
 
 </div>
+
 <div>
+	<h3>Current Tags</h3>
+	{% for tag in d.tags %}
+		{{tag}}
+		<a href="/document_tag_remove?d={{d._id}}&tag={{tag|urlencode}}">X</a>
+		;
+	{% endfor %}
+</div>
+
+<div>
+	<h3>Suggested Tags</h3>
 	{% for p in probs %}
 		{{p[0]}} 
 		: 
@@ -26,6 +38,24 @@
 	{% endfor %}
 </div>
 
+<div>
+	<h3>Add Tags</h3>
+	<form action="/document_tag_add" method="GET">
+		<input type="hidden" name="d" value="{{d._id}}">
+		<input type="text" name="tag">
+		<input type="submit">
+	</form>
+	<br/>
+	Please sperate by ','
+</div>
+
+<div>
+	<h3>TF-IDF keywords</h3>
+	{% for t in d.tfidf[:20] %}
+		{{t[0]}}
+		<br/>
+	{% endfor %}
+</div>
 
 
 </body>

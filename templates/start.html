@@ -1,27 +1,108 @@
 <html>
 <head>
 	<title>
-		Szakdoga app
+		Document classificator
 	</title>
-	
+
+	 <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+	 <script src="//code.jquery.com/jquery-1.9.1.js"></script>
+	 <script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>	
+
 </head>
 
 <body>
-<h1>
-	Hello
-</h1>
 
-<div>
-	<a href="/document_list">Document List</a>
-	<br/>
+<script>
+$(function() {
+	$("#tabs").tabs();
+});
+
+</script>
+
+
+<div id = "tabs">
+	<ul>
+		<li><a href="#fetch">Fetch a Document</a></li>
+		<li><a href="#document_list">Document List</a></li>
+		<li><a href="#tags">Tags</a></li>
+		<li><a href="#word_freq">Word Frequencies</a></li>
+	</ul>
+
+	<div id="fetch">
+		<form action="/fetch" method="POST" target="_blank">
+			<input type="text" name="url">
+			<input type="submit" value="FETCH">
+		</form>
+	</div>
+
+	<div id="document_list">
+
+		<table>
+			{% for d in documents %}	
+				<tr>
+					<td>
+						<a href="/class1?d={{d._id}}">Classify</a>
+						<br>
+						{{d.title}}
+					</td>
+
+					<td>
+						{{d.content[:300]}}
+					</td>
+
+					<td>
+						{% for tag in d.tags %}
+							{{tag}}
+							<a href="/document_tag_remove?d={{d._id}}&tag={{tag|urlencode}}">X</a>
+							<br/>
+						{% endfor %}
+					</td>
+
+					<td>
+						{% for t in d.tfidf[:10] %}
+							{{t[0]}}
+						{% endfor %}
+					</td>
+					
+					<td>
+						<form action="/document_tag_add" method="GET" target="_blank">
+							<input type="hidden" name="d" value="{{d._id}}">
+							<input type="text" name="tag">
+							<input type="submit" value="Add tag">
+						</form>
+					</td>
+				</tr>
+			{% endfor %}
+		</table>
+
+	</div>
+
+	<div id="tags">
+		{% for tag in tagList %}
+			<h3>{{tag}}</h3>
+				<ul>
+				{% for d in tagList[tag] %}
+					<li><a href="/class1?d={{[d['_id']]}}">{{d['title']}}</a></li>
+
+				{% endfor %}
+				</ul>
+		{% endfor %}
+	</div>
+
+	<div id="word_freq">
+		<table>
+			{% for w in genFreq %}
+			<tr>
+				<td>
+					{{w[0]}}
+				</td>
+				<td>
+					{{w[1]}}
+				</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
 </div>
-
-<form action="/fetch" method="POST">
-	<input type="text" name="url">
-	<input type="submit" value="FETCH">
-</form>
-
-
-
 
 </body>

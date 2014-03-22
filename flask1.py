@@ -1,6 +1,4 @@
-from flask import Flask
-from flask import render_template
-from flask import request
+from flask import Flask, request, render_template, url_for, redirect
 
 import requests
 import json
@@ -14,9 +12,24 @@ def initialize_collection(collection):
 	db = client.textMinerDB
 	return db[collection]
 
-@app.route("/")
-def hello():
-    return render_template('start.html')
+def document_list():
+	collection = initialize_collection('documents')
+	documents = [d for d in collection.find()]
+	count = collection.count()
+	return {'documents' : documents,
+			'count' : count}
+
+def tag_list():
+	tagList = {}
+	collection = initialize_collection('documents')
+	for d in collection.find():
+		if 'tags' in d:
+			for tag in d['tags']:
+				if tag in tagList:
+					tagList[tag].append(d)
+				else:
+					tagList[tag] = [d]
+	return tagList
 
 @app.route("/fetch", methods=['POST'])
 def fetch():
@@ -38,41 +51,38 @@ def fetch():
 		print docData
 		collection.insert(docData)
 
-	return render_template('doc_get.html', docData = docData, pageMsg = pageMsg)
-
-@app.route("/document_list")
-def document_list():
-	collection = initialize_collection('documents')
-	documents = [d for d in collection.find()]
-	count = collection.count()
-	return render_template('document_list.html', documents = documents, count = count)
+	#updating the tf-idf database
+	tfIdf()
+	return redirect(url_for('class1', d = docData['_id']))
+	#return render_template('doc_get.html', docData = docData, pageMsg = pageMsg)
 
 @app.route("/document_remove")
 def document_remove():
 	collection = initialize_collection('documents')
-
-	d = collection.remove({'_id' : ObjectId(request.args.get('d'))})
+	docId = request.args.get('d')
+	d = collection.remove({'_id' : ObjectId(docId)})
 	if (d == None) :
 		return render_template('error.html', error = 'There is no such a document')
 
-	return document_list()
+	return redirect(url_for('class1', d = docId))
 
 @app.route("/document_tag_add")
 def document_tag_add():
 	collection = initialize_collection('documents')
 	docId = request.args.get('d')
-	tag = request.args.get('tag')
+	tagList = request.args.get('tag').split(',')
 	d = collection.find_one({'_id' : ObjectId(docId)})
 	if (d == None) :
 		return render_template('error.html', error = 'There is no such a document')
 	if ('tags' in d) :
-		if (tag not in d['tags']):
-			d['tags'].append(tag)
+		for tag in tagList:
+			if (tag not in d['tags']):
+				d['tags'].append(tag)
 	else :
-		d['tags'] = [tag]
+		d['tags'] = tagList
 	collection.save(d)
 
-	return document_list()
+	return redirect(url_for('class1', d = docId))
 
 @app.route("/document_tag_remove")
 def document_tag_remove():
@@ -95,7 +105,7 @@ def bag_of_words(words):
 
 
 @app.route("/class1")
-def naiveBayesClassifier():
+def class1():
 	import nltk
 	from nltk.tokenize import WordPunctTokenizer
 	docId = request.args.get('d')
@@ -155,8 +165,30 @@ def decisionTreeClassifier():
 	probs = sorted(probs, key = lambda x : x[1],  reverse = True)
 	return render_template('error.html', error = 'aaa')"""
 
+def create_idf_map():
+	import nltk
+	from nltk.tokenize import WordPunctTokenizer
+	tokenizer = WordPunctTokenizer()		
+	collection = initialize_collection('documents')
 
+	idfMap = {}
+	docs = collection.find()
+	for d in docs:
+		for word in tokenizer.tokenize(d['content'].lower()):
+			if word not in idfMap:
+				idfMap[word] = 1
+			else:
+				idfMap[word] += 1
+	return idfMap
 
+def generaral_frequency(idfMap):
+	# general word frequency
+	# input - from idfMap function
+	genFreq = [(w, idfMap[w]) for w in idfMap]
+	genFreq = sorted(genFreq, key = lambda x : x[1], reverse = True)	
+	return genFreq
+
+#updates the TF-IDF values in DB
 @app.route("/tf_idf")
 def tfIdf():
 	TFIDF_MIN_SCORE = 100
@@ -165,16 +197,9 @@ def tfIdf():
 	tokenizer = WordPunctTokenizer()		
 	collection = initialize_collection('documents')
 
-	idfMap = {}
 	docs = collection.find()
 	tfidf = []
-	for d in docs:
-		for word in tokenizer.tokenize(d['content'].lower()):
-			if word not in idfMap:
-				idfMap[word] = 1
-			else:
-				idfMap[word] += 1
-
+	idfMap = create_idf_map()
 	docs = collection.find()
 	for d in docs:
 		tfMap = {}
@@ -188,16 +213,25 @@ def tfIdf():
 			if (tfMap[word] * 1000 / idfMap[word]) > TFIDF_MIN_SCORE:
 				tfIdfValues.append((word, tfMap[word] * 1000 / idfMap[word]))
 		tfIdfValues = sorted(tfIdfValues, key = lambda x : x[1], reverse = True)
+		d['tfidf'] = tfIdfValues
 		tfidf.append({'d' : d,
 					  'tfidf' : tfIdfValues})
+		collection.save(d)
 
 
-	# general word frequency
-	genFreq = [(w, idfMap[w]) for w in idfMap]
-	genFreq = sorted(genFreq, key = lambda x : x[1], reverse = True)
+	genFreq = generaral_frequency(idfMap)
+	return render_template("tfidf.html", documents = tfidf)
 
-	return render_template("tfidf.html", documents = tfidf
-										, genFreq = genFreq)
+@app.route("/")
+def hello():
+	documents = document_list()
+	genFreq = generaral_frequency(create_idf_map())
+	tagList = tag_list()
+	return render_template('start.html', 
+		documents = documents['documents'], 
+		count = documents['count'],
+		genFreq = genFreq,
+		tagList = tagList)
 
 if __name__ == "__main__":
     app.run(debug = True)
